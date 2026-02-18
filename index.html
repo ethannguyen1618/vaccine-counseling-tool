@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaccine Counseling Tool</title>
+    <style>
+        /* General Setup - Left side white, right side red */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { display: flex; width: 1000px; height: 600px; background-color: #ffffff; border-radius: 15px; overflow: hidden; }
+        
+        /* Left Panel - White Background */
+        .sidebar { width: 35%; background-color: #ffffff; padding: 25px; display: flex; flex-direction: column; gap: 15px; border-right: 2px solid #f0f0f0; overflow-y: auto; }
+        h2 { font-size: 20px; margin-bottom: 5px; color: #3e0213; letter-spacing: 0.5px; }
+        
+        /* Section Headers */
+        .section-header { background-color: #5c021d; color: white; padding: 10px; border-radius: 4px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: -5px; }
+        
+        /* Dual Input Row - Dark Red Backgrounds */
+        .input-row { display: flex; gap: 10px; align-items: center; }
+        input[type="date"], input[type="text"] { flex: 1; background: #5c021d; border: none; color: white; font-size: 14px; padding: 10px; border-radius: 4px; box-sizing: border-box; text-align: center; outline: none; font-family: inherit; cursor: pointer; }
+        input[type="number"] { width: 70px; background: #5c021d; border: none; color: white; font-size: 15px; padding: 10px; border-radius: 4px; box-sizing: border-box; text-align: center; outline: none; font-family: inherit; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; } 
+        input::placeholder { color: #ea9ab2; opacity: 0.8; }
+        .or-text { font-size: 12px; font-weight: bold; color: #5c021d; }
+        
+        /* Dropdown Styling */
+        .dropdown-wrapper { display: flex; flex-direction: column; width: 100%; }
+        .dropdown-header { background-color: #5c021d; color: white; padding: 10px; border-radius: 4px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+        .dropdown-header span.spacer { width: 15px; } 
+        .dropdown-content { display: none; flex-direction: column; border: 1px solid #5c021d; border-top: none; border-radius: 0 0 4px 4px; overflow: hidden; }
+        .dropdown-content.open { display: flex; }
+        .exclusion-item { background-color: #ea9ab2; color: #000; padding: 10px; text-align: center; font-size: 13px; cursor: pointer; border-bottom: 1px solid #5c021d; transition: background-color 0.2s; }
+        .exclusion-item:last-child { border-bottom: none; }
+        .exclusion-item.active { background-color: #3e0213; color: white; font-weight: bold; }
+
+        /* Conditions Grid (#e9e6d6) */
+        .conditions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        .condition-btn { background-color: #e9e6d6; border: 2px solid transparent; color: #000; padding: 10px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .condition-btn.active { border-color: #3e0213; box-shadow: inset 0 0 0 1px #3e0213; }
+        
+        /* Go Button */
+        .go-btn { margin-top: auto; background-color: #ffffff; border: 3px solid #3e0213; color: #3e0213; padding: 10px 30px; border-radius: 30px; font-weight: bold; align-self: flex-end; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 40%; font-size: 16px; transition: 0.2s; }
+        .go-btn:hover { background-color: #e9e6d6; }
+
+        /* Right Panel */
+        .main-content { width: 65%; display: flex; flex-direction: column; position: relative; background-color: #ffffff; padding: 20px 20px 20px 0; } 
+        
+        /* Tabs Setup */
+        .tabs { display: flex; padding-left: 20px; gap: 5px; margin-bottom: -1px; z-index: 2; position: relative; }
+        .tab { background-color: #3E0213; color: #fff; padding: 15px 30px; border-radius: 20px 20px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; border: none; transition: 0.2s; opacity: 0.9; }
+        .tab:hover { opacity: 1; }
+        
+        /* Active Tab smoothly blends into the red results container */
+        .tab.active { background-color: #690323; color: #ffffff; opacity: 1; padding-bottom: 16px; }
+        
+        /* Main Results Area - Deep Red */
+        .results-container { background-color: #690323; flex-grow: 1; padding: 40px; color: #ffffff; border-radius: 20px; border-top-left-radius: 0; overflow-y: auto; z-index: 1; position: relative; box-shadow: inset 0px 4px 10px rgba(0,0,0,0.1); }
+        
+        .results { font-size: 16px; line-height: 1.6; animation: fadeIn 0.3s ease; }
+        
+        /* Stat Cards for All Tabs */
+        .stat-card { background: rgba(0, 0, 0, 0.15); padding: 25px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #ea9ab2; color: #ffffff; }
+        .stat-highlight { font-size: 26px; font-weight: bold; color: #ffffff; display: block; margin-bottom: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <h2>VACCINE COUNSELING TOOL</h2>
+        
+        <div class="section-header">Birthdate OR Age</div>
+        
+        <div class="input-row">
+            <input type="date" id="dobInput" oninput="clearAge()">
+            <span class="or-text">OR</span>
+            <input type="number" id="ageInput" placeholder="Age" min="0" max="120" oninput="clearDob()">
+        </div>
+        
+        <div class="dropdown-wrapper">
+            <div id="dropdown-header-box" class="dropdown-header" onclick="toggleDropdown()">
+                <span class="spacer"></span>
+                Exclusion Criteria 
+                <span id="dropdown-arrow">▼</span>
+            </div>
+            <div id="exclusion-content" class="dropdown-content">
+                <div class="exclusion-item" onclick="toggleExclusion(this, 'immuno')">Immunocompromised</div>
+                <div class="exclusion-item" onclick="toggleExclusion(this, 'pregnant')">Pregnant</div>
+                <div class="exclusion-item" onclick="toggleExclusion(this, 'under18')">Under 18</div>
+            </div>
+        </div>
+
+        <div class="section-header">Select all conditions that apply:</div>
+        
+        <div class="conditions-grid">
+            <button class="condition-btn" onclick="toggleCondition(this, 'cvd')">Cardiovascular Disease</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'htn')">Hypertension</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'hf')">Heart Failure</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'diabetes')">Diabetes</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'ckd')">CKD</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'asthma')">Asthma</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'copd')">COPD</button>
+            <button class="condition-btn" onclick="toggleCondition(this, 'obesity')">Obesity</button>
+        </div>
+
+        <button class="go-btn" onclick="calculateStats()">GO ▶</button>
+    </div>
+
+    <div class="main-content">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('abrysvo')">ABRYSVO</button>
+            <button class="tab" onclick="switchTab('prevnar')">PREVNAR 20</button>
+            <button class="tab" onclick="switchTab('shingrix')">SHINGRIX</button>
+        </div>
+        <div class="results-container">
+            <div id="resultsArea" class="results">
+                <p style="opacity: 0.8; font-style: italic; color: #ea9ab2;">Enter birthdate or age and conditions, then press GO to see statistics.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeTab = 'abrysvo';
+    let selectedConditions = new Set();
+    let selectedExclusions = new Set();
+
+    function clearAge() { document.getElementById('ageInput').value = ''; }
+    function clearDob() { document.getElementById('dobInput').value = ''; }
+
+    function toggleDropdown() {
+        const content = document.getElementById('exclusion-content');
+        const arrow = document.getElementById('dropdown-arrow');
+        const header = document.getElementById('dropdown-header-box');
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+            arrow.innerHTML = '▼';
+            header.style.borderRadius = "4px";
+        } else {
+            content.classList.add('open');
+            arrow.innerHTML = '▲';
+            header.style.borderRadius = "4px 4px 0 0";
+        }
+    }
+
+    function toggleExclusion(item, exclusion) {
+        if (selectedExclusions.has(exclusion)) {
+            selectedExclusions.delete(exclusion);
+            item.classList.remove('active');
+        } else {
+            selectedExclusions.add(exclusion);
+            item.classList.add('active');
+        }
+    }
+
+    function toggleCondition(btn, condition) {
+        if (selectedConditions.has(condition)) {
+            selectedConditions.delete(condition);
+            btn.classList.remove('active');
+        } else {
+            selectedConditions.add(condition);
+            btn.classList.add('active');
+        }
+    }
+
+    function switchTab(tabName) {
+        activeTab = tabName;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        const dobStr = document.getElementById('dobInput').value;
+        const ageStr = document.getElementById('ageInput').value;
+        
+        if(dobStr !== '' || ageStr !== '') {
+            calculateStats(); 
+        } else {
+            document.getElementById('resultsArea').innerHTML = `<p style="opacity: 0.8; font-style: italic; color: #ea9ab2;">Enter birthdate or age and conditions, then press GO to see statistics.</p>`;
+        }
+    }
+
+    // MAIN LOGIC ENGINE
+    function calculateStats() {
+        const dobStr = document.getElementById('dobInput').value;
+        const ageStr = document.getElementById('ageInput').value;
+        let age;
+
+        // 1. Calculate Age
+        if (ageStr !== '') {
+            age = parseInt(ageStr, 10);
+        } else if (dobStr !== '') {
+            const [year, month, day] = dobStr.split('-');
+            const dob = new Date(year, month - 1, day);
+            const diff_ms = Date.now() - dob.getTime();
+            const age_dt = new Date(diff_ms); 
+            age = Math.abs(age_dt.getUTCFullYear() - 1970);
+        } else {
+            document.getElementById('resultsArea').innerHTML = `<p style="color: #ea9ab2; font-weight: bold;">Please enter a birthdate or age to continue.</p>`;
+            return;
+        }
+
+        let html = `<h3 style="color: #ffffff; border-bottom: 2px solid #ea9ab2; padding-bottom: 10px; margin-top: 0;">Patient Age: ${age}</h3>`;
+        
+        // ==========================================
+        // TAB 1: ABRYSVO LOGIC
+        // ==========================================
+        if (activeTab === 'abrysvo') {
+            
+            if (selectedExclusions.size > 0 || age < 50) {
+                html += `
+                <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
+                    The RSV vaccine (e.g., Arexvy, Abrysvo) is currently recommended for adults 60 years and older using shared clinical decision-making, and for pregnant individuals to protect their infants.<br><br>
+                    This tool is limited to data for adults 60 years and older and does not include data for pregnant individuals or immunocompromised individuals.
+                </div>`;
+                document.getElementById('resultsArea').innerHTML = html;
+                return; 
+            }
+
+            let statPercent = "";
+            let ageRangeText = "";
+
+            if (age >= 50 && age <= 54) { statPercent = "14.00%"; ageRangeText = "50-54"; }
+            else if (age >= 55 && age <= 59) { statPercent = "14.00%"; ageRangeText = "55-59"; }
+            else if (age >= 60 && age <= 64) { statPercent = "10.00%"; ageRangeText = "60-64"; }
+            else if (age >= 65 && age <= 69) { statPercent = "22.9%"; ageRangeText = "65-69"; }
+            else if (age >= 70 && age <= 74) { statPercent = "22.9%"; ageRangeText = "70-74"; }
+            else if (age >= 75 && age <= 79) { statPercent = "39.4%"; ageRangeText = "75-79"; }
+            else if (age >= 80 && age <= 84) { statPercent = "39.4%"; ageRangeText = "80-84"; }
+            else if (age >= 85) { statPercent = "39.4%"; ageRangeText = "85+"; }
+
+            html += `
+            <div class="stat-card">
+                <span class="stat-highlight">${statPercent}</span>
+                ${statPercent} of patients with RSV associated hospitalizations were in the age range of ${ageRangeText}.
+            </div>`;
+
+            if (age >= 60) {
+                html += `
+                <div class="stat-card">
+                    <span class="stat-highlight">73% - 89%</span>
+                    Vaccine effectiveness of ABRYSVO against RSV related hospitalization or ED visits ranges from 73%-89%.
+                </div>
+                <div class="stat-card">
+                    <span class="stat-highlight">78% - 82%</span>
+                    Vaccine effectiveness of ABRYSVO against RSV Lower respiratory tract disease ranges from 78%-82%.
+                </div>`;
+            }
+
+            const abrysvoConditions = {
+                'cvd': { name: 'cardiovascular disease', percent: '57.40%' },
+                'obesity': { name: 'obesity', percent: '39%' },
+                'diabetes': { name: 'diabetes', percent: '34.10%' },
+                'copd': { name: 'COPD', percent: '31.40%' },
+                'hf': { name: 'heart failure', percent: '28%' },
+                'ckd': { name: 'chronic kidney disease', percent: '27%' },
+                'asthma': { name: 'asthma', percent: '24%' }
+            };
+
+            selectedConditions.forEach(cond => {
+                if(abrysvoConditions[cond]) {
+                    html += `
+                    <div class="stat-card">
+                        <span class="stat-highlight">${abrysvoConditions[cond].percent}</span>
+                        ${abrysvoConditions[cond].percent} of patients with RSV associated hospitalizations had ${abrysvoConditions[cond].name}.
+                    </div>`;
+                }
+            });
+        }
+
+        // ==========================================
+        // TAB 2: PREVNAR 20 LOGIC
+        // ==========================================
+        else if (activeTab === 'prevnar') {
+            
+            if (selectedExclusions.size > 0 || age < 50) {
+                html += `
+                <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
+                    The Pneumonia vaccine is only recommended for all PCV-naïve adults aged ≥50 years.<br><br>
+                    Adults aged 19–49 years with an immunocompromising condition, a CSF leak, or a cochlear implant<br><br>
+                    This tool does not include data for individuals or immunocompromised adults.<br><br>
+                    <a href="https://www.cdc.gov/mmwr/volumes/74/wr/mm7401a1.htm?s_cid=mm7401a1_e&ACSTrackingID=USCDC_921-DM143559&ACSTrackingLabel=This%20Week%20in%20MMWR%3A%20Vol.%2074%2C%20January%209%2C%202025&deliveryName=USCDC_921-DM143559#T1_down" target="_blank" style="color: #ea9ab2; text-decoration: underline; font-weight: bold;">CDC Source</a>
+                </div>`;
+                document.getElementById('resultsArea').innerHTML = html;
+                return; 
+            }
+
+            if (age >= 50 && age <= 64) {
+                html += `
+                <div class="stat-card">
+                    <span class="stat-highlight">Nearly 3x Higher</span>
+                    Adults aged 50–64 years have a rate nearly 3 times higher than those aged 18–49
+                </div>`;
+            } else if (age >= 65) {
+                html += `
+                <div class="stat-card">
+                    <span class="stat-highlight">Over 7x Higher</span>
+                    Adults aged 65+ years have a rate over 7 times higher than those aged 18–49
+                </div>
+                <div class="stat-card">
+                    <span class="stat-highlight">46% - 73%</span>
+                    VE against a first episode of either vaccine-type nonbacteremic/noninvasive or vaccine-type bacteremic/invasive pneumococcal CAP was decreased by 46-73%
+                </div>
+                <div class="stat-card">
+                    <span class="stat-highlight">75%</span>
+                    VE against vaccine-type CAP hospitalization was decreased by 75%<br><br>
+                    <span style="font-size: 14px; opacity: 0.8; font-style: italic;">Disclaimer: Built on established efficacy of Prevnar 13®</span>
+                </div>`;
+            }
+
+            const prevnarConditions = {
+                'cvd': { name: 'cardiovascular disease', percent: '35.00%' },
+                'diabetes': { name: 'diabetes', percent: '32.00%' },
+                'copd': { name: 'COPD', percent: '53.00%' },
+                'hf': { name: 'heart failure', percent: '32.00%' },
+                'ckd': { name: 'chronic kidney disease', percent: '23.00%' }
+            };
+
+            selectedConditions.forEach(cond => {
+                if(prevnarConditions[cond]) {
+                    html += `
+                    <div class="stat-card">
+                        <span class="stat-highlight">${prevnarConditions[cond].percent}</span>
+                        ${prevnarConditions[cond].percent} of patients that were hospitalized for invasive pneumococcal disease had ${prevnarConditions[cond].name}
+                    </div>`;
+                }
+            });
+        }
+        
+        // ==========================================
+        // TAB 3: SHINGRIX LOGIC
+        // ==========================================
+        else if (activeTab === 'shingrix') {
+            
+            if (selectedExclusions.size > 0 || age < 50) {
+                html += `
+                <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
+                    The Shingrix vaccine is only recommended for healthy adults 50 years and older or immunocompromised adults 19 years and older:<br>
+                    people who are or will be at increased risk of shingles due to disease or therapy.<br><br>
+                    This tool does not include data for individuals or immunocompromised adults.
+                </div>`;
+                document.getElementById('resultsArea').innerHTML = html;
+                return; 
+            }
+
+            let statPercent = "";
+            let ageRangeText = "";
+
+            if (age >= 50 && age <= 54) { statPercent = "38.77%"; ageRangeText = "50-54"; }
+            else if (age >= 55 && age <= 59) { statPercent = "38.77%"; ageRangeText = "55-59"; }
+            else if (age >= 60 && age <= 64) { statPercent = "38.77%"; ageRangeText = "60-64"; }
+            else if (age >= 65 && age <= 69) { statPercent = "23.02%"; ageRangeText = "65-69"; }
+            else if (age >= 70 && age <= 74) { statPercent = "23.02%"; ageRangeText = "70-74"; }
+            else if (age >= 75 && age <= 79) { statPercent = "21.48%"; ageRangeText = "75-79"; }
+            else if (age >= 80 && age <= 84) { statPercent = "21.48%"; ageRangeText = "80-84"; }
+            else if (age >= 85) { statPercent = "21.48%"; ageRangeText = "85+"; }
+
+            // Age Stat Card
+            html += `
+            <div class="stat-card">
+                <span class="stat-highlight">${statPercent}</span>
+                ${statPercent} of patients developed irreversible postherpetic neuralgia (PHN) after their shingles infection were in the age range of ${ageRangeText}.
+            </div>`;
+
+            // Efficacy Block Card
+            if (age >= 50 && age <= 69) {
+                html += `
+                <div class="stat-card">
+                    <span class="stat-highlight">97.2% Initial Efficacy</span>
+                    Initial efficacy: 97.2% against herpes zoster.<br><br>
+                    Long-term efficacy: Maintained a VE of 87.7% against herpes zoster up to 11 years post-vaccination.<br><br>
+                    Vaccine efficacy against postherpetic neuralgia was 87.5%
+                </div>`;
+            } else if (age >= 70) {
+                html += `
+                <div class="stat-card">
+                    <span class="stat-highlight">97.2% Initial Efficacy</span>
+                    Initial efficacy: 97.2% against herpes zoster.<br><br>
+                    Long-term efficacy: VE against HZ was sustained at 82.0% in the eleventh year post-vaccination, while a pooled analysis reported a long-term VE of 73.2%.<br><br>
+                    Vaccine efficacy against postherpetic neuralgia was 88.8%
+                </div>`;
+            }
+
+            // Condition Stat Cards
+            const shingrixConditions = {
+                'cvd': { name: 'cardiovascular disease', percent: '64.80%' },
+                'htn': { name: 'Hypertension', percent: '57.40%' },
+                'diabetes': { name: 'Diabetes', percent: '15.80%' },
+                'copd': { name: 'COPD', percent: '6.60%' },
+                'hf': { name: 'Heart failure', percent: '7.60%' },
+                'ckd': { name: 'Chronic kidney disease', percent: '13.00%' },
+                'asthma': { name: 'Asthma', percent: '9.80%' },
+                'obesity': { name: 'Obesity', percent: '14.60%' }
+            };
+
+            selectedConditions.forEach(cond => {
+                if(shingrixConditions[cond]) {
+                    html += `
+                    <div class="stat-card">
+                        <span class="stat-highlight">${shingrixConditions[cond].percent}</span>
+                        ${shingrixConditions[cond].percent} of patients that developed irreversible postherpetic neuralgia (PHN) after their shingles infection had ${shingrixConditions[cond].name}.
+                    </div>`;
+                }
+            });
+        }
+
+        document.getElementById('resultsArea').innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
