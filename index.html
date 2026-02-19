@@ -7,11 +7,11 @@
     <style>
         /* General Setup - Left side white, right side red */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { display: flex; width: 1000px; height: 600px; background-color: #ffffff; border-radius: 15px; overflow: hidden; }
+        .container { display: flex; width: 1000px; height: 620px; background-color: #ffffff; border-radius: 15px; overflow: hidden; }
         
         /* Left Panel - White Background */
-        .sidebar { width: 35%; background-color: #ffffff; padding: 25px; display: flex; flex-direction: column; gap: 15px; border-right: 2px solid #f0f0f0; overflow-y: auto; }
-        h2 { font-size: 20px; margin-bottom: 5px; color: #3e0213; letter-spacing: 0.5px; }
+        .sidebar { width: 35%; background-color: #ffffff; padding: 20px 25px; display: flex; flex-direction: column; gap: 12px; border-right: 2px solid #f0f0f0; }
+        h2 { font-size: 20px; margin-bottom: 0px; color: #3e0213; letter-spacing: 0.5px; }
         
         /* Section Headers */
         .section-header { background-color: #5c021d; color: white; padding: 10px; border-radius: 4px; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: -5px; }
@@ -25,10 +25,10 @@
         .or-text { font-size: 12px; font-weight: bold; color: #5c021d; }
         
         /* Dropdown Styling */
-        .dropdown-wrapper { display: flex; flex-direction: column; width: 100%; }
+        .dropdown-wrapper { position: relative; display: flex; flex-direction: column; width: 100%; z-index: 10; }
         .dropdown-header { background-color: #5c021d; color: white; padding: 10px; border-radius: 4px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
         .dropdown-header span.spacer { width: 15px; } 
-        .dropdown-content { display: none; flex-direction: column; border: 1px solid #5c021d; border-top: none; border-radius: 0 0 4px 4px; overflow: hidden; }
+        .dropdown-content { display: none; flex-direction: column; border: 1px solid #5c021d; border-top: none; border-radius: 0 0 4px 4px; overflow: hidden; position: absolute; top: 100%; left: 0; width: 100%; box-sizing: border-box; }
         .dropdown-content.open { display: flex; }
         .exclusion-item { background-color: #ea9ab2; color: #000; padding: 10px; text-align: center; font-size: 13px; cursor: pointer; border-bottom: 1px solid #5c021d; transition: background-color 0.2s; }
         .exclusion-item:last-child { border-bottom: none; }
@@ -59,9 +59,13 @@
         
         .results { font-size: 16px; line-height: 1.6; animation: fadeIn 0.3s ease; }
         
-        /* Stat Cards for All Tabs */
+        /* Stat Cards */
         .stat-card { background: rgba(0, 0, 0, 0.15); padding: 25px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #ea9ab2; color: #ffffff; }
         .stat-highlight { font-size: 26px; font-weight: bold; color: #ffffff; display: block; margin-bottom: 5px; }
+        
+        /* Summary Card Style */
+        .summary-card { background: #5c021d; padding: 25px; border-radius: 10px; margin-top: 0; margin-bottom: 25px; border-left: 5px solid #ea9ab2; color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .summary-card .stat-highlight { color: #ea9ab2; font-size: 22px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -89,7 +93,7 @@
             <div id="exclusion-content" class="dropdown-content">
                 <div class="exclusion-item" onclick="toggleExclusion(this, 'immuno')">Immunocompromised</div>
                 <div class="exclusion-item" onclick="toggleExclusion(this, 'pregnant')">Pregnant</div>
-                <div class="exclusion-item" onclick="toggleExclusion(this, 'under18')">Under 18</div>
+                <div class="exclusion-item" onclick="toggleExclusion(this, 'under50')">Under 50</div>
             </div>
         </div>
 
@@ -201,7 +205,7 @@
             return;
         }
 
-        let html = `<h3 style="color: #ffffff; border-bottom: 2px solid #ea9ab2; padding-bottom: 10px; margin-top: 0;">Patient Age: ${age}</h3>`;
+        let html = `<h3 style="color: #ffffff; border-bottom: 2px solid #ea9ab2; padding-bottom: 10px; margin-top: 0; margin-bottom: 20px;">Patient Age: ${age}</h3>`;
         
         // ==========================================
         // TAB 1: ABRYSVO LOGIC
@@ -230,14 +234,15 @@
             else if (age >= 80 && age <= 84) { statPercent = "39.4%"; ageRangeText = "80-84"; }
             else if (age >= 85) { statPercent = "39.4%"; ageRangeText = "85+"; }
 
-            html += `
+            let ageHtml = `
             <div class="stat-card">
                 <span class="stat-highlight">${statPercent}</span>
                 ${statPercent} of patients with RSV associated hospitalizations were in the age range of ${ageRangeText}.
             </div>`;
 
+            let veHtml = "";
             if (age >= 60) {
-                html += `
+                veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">73% - 89%</span>
                     Vaccine effectiveness of ABRYSVO against RSV related hospitalization or ED visits ranges from 73%-89%.
@@ -258,15 +263,37 @@
                 'asthma': { name: 'asthma', percent: '24%' }
             };
 
+            let maxCondName = "";
+            let maxCondVal = 0;
+            let condHtml = "";
+
             selectedConditions.forEach(cond => {
                 if(abrysvoConditions[cond]) {
-                    html += `
+                    let val = parseFloat(abrysvoConditions[cond].percent);
+                    if (val > maxCondVal) {
+                        maxCondVal = val;
+                        maxCondName = abrysvoConditions[cond].name;
+                    }
+                    condHtml += `
                     <div class="stat-card">
                         <span class="stat-highlight">${abrysvoConditions[cond].percent}</span>
                         ${abrysvoConditions[cond].percent} of patients with RSV associated hospitalizations had ${abrysvoConditions[cond].name}.
                     </div>`;
                 }
             });
+
+            // TOTAL PROTECTION SUMMARY MATH (ABRYSVO)
+            if (maxCondVal > 0 && age >= 60) {
+                let lowRes = (maxCondVal * (1 - 0.89)).toFixed(2);
+                let highRes = (maxCondVal * (1 - 0.73)).toFixed(2);
+                html += `
+                <div class="summary-card">
+                    <span class="stat-highlight">Total Protection Summary</span>
+                    Because you have ${maxCondName}, you belong to a high-risk group that currently accounts for <strong>${maxCondVal.toFixed(2)}%</strong> of severe RSV hospitalizations. By getting the ABRYSVO vaccine, which is 73% to 89% effective, that severe risk burden drops to between <strong>${lowRes}% and ${highRes}%</strong>.
+                </div>`;
+            }
+
+            html += ageHtml + veHtml + condHtml;
         }
 
         // ==========================================
@@ -279,25 +306,29 @@
                 <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
                     The Pneumonia vaccine is only recommended for all PCV-naïve adults aged ≥50 years.<br><br>
                     Adults aged 19–49 years with an immunocompromising condition, a CSF leak, or a cochlear implant<br><br>
-                    This tool does not include data for individuals or immunocompromised adults.<br><br>
-                    <a href="https://www.cdc.gov/mmwr/volumes/74/wr/mm7401a1.htm?s_cid=mm7401a1_e&ACSTrackingID=USCDC_921-DM143559&ACSTrackingLabel=This%20Week%20in%20MMWR%3A%20Vol.%2074%2C%20January%209%2C%202025&deliveryName=USCDC_921-DM143559#T1_down" target="_blank" style="color: #ea9ab2; text-decoration: underline; font-weight: bold;">CDC Source</a>
+                    This tool does not include data for individuals or immunocompromised adults.
                 </div>`;
                 document.getElementById('resultsArea').innerHTML = html;
                 return; 
             }
 
+            let ageHtml = "";
+            let veHtml = "";
+
             if (age >= 50 && age <= 64) {
-                html += `
+                ageHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">Nearly 3x Higher</span>
                     Adults aged 50–64 years have a rate nearly 3 times higher than those aged 18–49
                 </div>`;
             } else if (age >= 65) {
-                html += `
+                ageHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">Over 7x Higher</span>
                     Adults aged 65+ years have a rate over 7 times higher than those aged 18–49
-                </div>
+                </div>`;
+
+                veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">46% - 73%</span>
                     VE against a first episode of either vaccine-type nonbacteremic/noninvasive or vaccine-type bacteremic/invasive pneumococcal CAP was decreased by 46-73%
@@ -317,15 +348,36 @@
                 'ckd': { name: 'chronic kidney disease', percent: '23.00%' }
             };
 
+            let maxCondName = "";
+            let maxCondVal = 0;
+            let condHtml = "";
+
             selectedConditions.forEach(cond => {
                 if(prevnarConditions[cond]) {
-                    html += `
+                    let val = parseFloat(prevnarConditions[cond].percent);
+                    if (val > maxCondVal) {
+                        maxCondVal = val;
+                        maxCondName = prevnarConditions[cond].name;
+                    }
+                    condHtml += `
                     <div class="stat-card">
                         <span class="stat-highlight">${prevnarConditions[cond].percent}</span>
                         ${prevnarConditions[cond].percent} of patients that were hospitalized for invasive pneumococcal disease had ${prevnarConditions[cond].name}
                     </div>`;
                 }
             });
+
+            // TOTAL PROTECTION SUMMARY MATH (PREVNAR)
+            if (maxCondVal > 0 && age >= 65) {
+                let res = (maxCondVal * (1 - 0.75)).toFixed(2);
+                html += `
+                <div class="summary-card">
+                    <span class="stat-highlight">Total Protection Summary</span>
+                    Because you have ${maxCondName}, you belong to a high-risk group that accounts for <strong>${maxCondVal.toFixed(2)}%</strong> of invasive pneumococcal hospitalizations. By getting Prevnar 20, which reduces hospitalizations by 75%, your severe risk burden drops to <strong>${res}%</strong>.
+                </div>`;
+            }
+
+            html += ageHtml + veHtml + condHtml;
         }
         
         // ==========================================
@@ -356,16 +408,15 @@
             else if (age >= 80 && age <= 84) { statPercent = "21.48%"; ageRangeText = "80-84"; }
             else if (age >= 85) { statPercent = "21.48%"; ageRangeText = "85+"; }
 
-            // Age Stat Card
-            html += `
+            let ageHtml = `
             <div class="stat-card">
                 <span class="stat-highlight">${statPercent}</span>
                 ${statPercent} of patients developed irreversible postherpetic neuralgia (PHN) after their shingles infection were in the age range of ${ageRangeText}.
             </div>`;
 
-            // Efficacy Block Card
+            let veHtml = "";
             if (age >= 50 && age <= 69) {
-                html += `
+                veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">97.2% Initial Efficacy</span>
                     Initial efficacy: 97.2% against herpes zoster.<br><br>
@@ -373,7 +424,7 @@
                     Vaccine efficacy against postherpetic neuralgia was 87.5%
                 </div>`;
             } else if (age >= 70) {
-                html += `
+                veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">97.2% Initial Efficacy</span>
                     Initial efficacy: 97.2% against herpes zoster.<br><br>
@@ -382,7 +433,6 @@
                 </div>`;
             }
 
-            // Condition Stat Cards
             const shingrixConditions = {
                 'cvd': { name: 'cardiovascular disease', percent: '64.80%' },
                 'htn': { name: 'Hypertension', percent: '57.40%' },
@@ -394,15 +444,39 @@
                 'obesity': { name: 'Obesity', percent: '14.60%' }
             };
 
+            let maxCondName = "";
+            let maxCondVal = 0;
+            let condHtml = "";
+
             selectedConditions.forEach(cond => {
                 if(shingrixConditions[cond]) {
-                    html += `
+                    let val = parseFloat(shingrixConditions[cond].percent);
+                    if (val > maxCondVal) {
+                        maxCondVal = val;
+                        maxCondName = shingrixConditions[cond].name;
+                    }
+                    condHtml += `
                     <div class="stat-card">
                         <span class="stat-highlight">${shingrixConditions[cond].percent}</span>
                         ${shingrixConditions[cond].percent} of patients that developed irreversible postherpetic neuralgia (PHN) after their shingles infection had ${shingrixConditions[cond].name}.
                     </div>`;
                 }
             });
+
+            // TOTAL PROTECTION SUMMARY MATH (SHINGRIX)
+            if (maxCondVal > 0 && age >= 50) {
+                let ve = age >= 70 ? 0.888 : 0.875;
+                let veText = age >= 70 ? "88.8%" : "87.5%";
+                let res = (maxCondVal * (1 - ve)).toFixed(2);
+                
+                html += `
+                <div class="summary-card">
+                    <span class="stat-highlight">Total Protection Summary</span>
+                    Because you have ${maxCondName}, you belong to a group that accounts for <strong>${maxCondVal.toFixed(2)}%</strong> of patients who develop severe, irreversible nerve damage (PHN) after a shingles infection. By getting Shingrix, which has an ${veText} efficacy against PHN for your age group, your risk burden drops to <strong>${res}%</strong>.
+                </div>`;
+            }
+
+            html += ageHtml + veHtml + condHtml;
         }
 
         document.getElementById('resultsArea').innerHTML = html;
