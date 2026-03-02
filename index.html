@@ -212,7 +212,8 @@
         // ==========================================
         if (activeTab === 'abrysvo') {
             
-            if (selectedExclusions.size > 0 || age < 50) {
+            // Abrysvo is strictly for ages 60+
+            if (selectedExclusions.size > 0 || age < 60) {
                 html += `
                 <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
                     The RSV vaccine (e.g., Arexvy, Abrysvo) is currently recommended for adults 60 years and older using shared clinical decision-making, and for pregnant individuals to protect their infants.<br><br>
@@ -225,9 +226,7 @@
             let statPercent = "";
             let ageRangeText = "";
 
-            if (age >= 50 && age <= 54) { statPercent = "14.00%"; ageRangeText = "50-54"; }
-            else if (age >= 55 && age <= 59) { statPercent = "14.00%"; ageRangeText = "55-59"; }
-            else if (age >= 60 && age <= 64) { statPercent = "10.00%"; ageRangeText = "60-64"; }
+            if (age >= 60 && age <= 64) { statPercent = "10.00%"; ageRangeText = "60-64"; }
             else if (age >= 65 && age <= 69) { statPercent = "22.9%"; ageRangeText = "65-69"; }
             else if (age >= 70 && age <= 74) { statPercent = "22.9%"; ageRangeText = "70-74"; }
             else if (age >= 75 && age <= 79) { statPercent = "39.4%"; ageRangeText = "75-79"; }
@@ -241,8 +240,7 @@
             </div>`;
 
             let veHtml = "";
-            // Changed from age >= 60 to age >= 50 to ensure full functionality across all eligible ages
-            if (age >= 50) {
+            if (age >= 60) {
                 veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">73% - 89%</span>
@@ -284,8 +282,7 @@
             });
 
             // TOTAL PROTECTION SUMMARY MATH (ABRYSVO)
-            // Changed from age >= 60 to age >= 50 so 55-60 year olds get the summary card
-            if (maxCondVal > 0 && age >= 50) {
+            if (maxCondVal > 0 && age >= 60) {
                 let lowRes = (maxCondVal * (1 - 0.89)).toFixed(2);
                 let highRes = (maxCondVal * (1 - 0.73)).toFixed(2);
                 html += `
@@ -303,6 +300,7 @@
         // ==========================================
         else if (activeTab === 'prevnar') {
             
+            // Prevnar stays at age < 50
             if (selectedExclusions.size > 0 || age < 50) {
                 html += `
                 <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
@@ -331,7 +329,6 @@
                 </div>`;
             }
             
-            // Expanded to 50+ so the summary calculation can function across the board
             if (age >= 50) {
                 veHtml += `
                 <div class="stat-card">
@@ -373,7 +370,6 @@
             });
 
             // TOTAL PROTECTION SUMMARY MATH (PREVNAR)
-            // Changed from age >= 65 to age >= 50 to ensure full functionality
             if (maxCondVal > 0 && age >= 50) {
                 let res = (maxCondVal * (1 - 0.75)).toFixed(2);
                 html += `
@@ -391,6 +387,7 @@
         // ==========================================
         else if (activeTab === 'shingrix') {
             
+            // Shingrix stays at age < 50
             if (selectedExclusions.size > 0 || age < 50) {
                 html += `
                 <div class="stat-card" style="border-left-color: #ffffff; background: rgba(0,0,0,0.3);">
