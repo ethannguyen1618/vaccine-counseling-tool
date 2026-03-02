@@ -241,7 +241,8 @@
             </div>`;
 
             let veHtml = "";
-            if (age >= 60) {
+            // Changed from age >= 60 to age >= 50 to ensure full functionality across all eligible ages
+            if (age >= 50) {
                 veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">73% - 89%</span>
@@ -283,7 +284,8 @@
             });
 
             // TOTAL PROTECTION SUMMARY MATH (ABRYSVO)
-            if (maxCondVal > 0 && age >= 60) {
+            // Changed from age >= 60 to age >= 50 so 55-60 year olds get the summary card
+            if (maxCondVal > 0 && age >= 50) {
                 let lowRes = (maxCondVal * (1 - 0.89)).toFixed(2);
                 let highRes = (maxCondVal * (1 - 0.73)).toFixed(2);
                 html += `
@@ -327,7 +329,10 @@
                     <span class="stat-highlight">Over 7x Higher</span>
                     Adults aged 65+ years have a rate over 7 times higher than those aged 18–49
                 </div>`;
-
+            }
+            
+            // Expanded to 50+ so the summary calculation can function across the board
+            if (age >= 50) {
                 veHtml += `
                 <div class="stat-card">
                     <span class="stat-highlight">46% - 73%</span>
@@ -368,7 +373,8 @@
             });
 
             // TOTAL PROTECTION SUMMARY MATH (PREVNAR)
-            if (maxCondVal > 0 && age >= 65) {
+            // Changed from age >= 65 to age >= 50 to ensure full functionality
+            if (maxCondVal > 0 && age >= 50) {
                 let res = (maxCondVal * (1 - 0.75)).toFixed(2);
                 html += `
                 <div class="summary-card">
